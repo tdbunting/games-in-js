@@ -11,7 +11,7 @@ These instructions will get you a copy of the project up and running on your loc
 ### Setup
 In your html file, create a new canvas and give it an id.
 ```html
-<canvas id="my-canvas" width='480' height='480'>
+<canvas id="my-canvas" width='560' height='480'>
 ```
 Then in a script tag within your HTML or in an external javascript file, create a reference to your canvas element and pass that along to the TicTacToeGame constructor.
 
