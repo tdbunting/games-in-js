@@ -1,4 +1,4 @@
-# Tic Tac Toe
+# Games In JavaScript
 
 This is a small collection of simple games made with plain JavaScript.
 
