@@ -1,8 +1,8 @@
-# Tic Tac Toe
+# Connect Four 
 
-<img alt="Tic Tac Toe!" src="./img/tictac.png" width="250">
+<img alt="Connect Four" src="./img/connect4.png" width="250">
 
-This is a simple Tic-Tac-Toe game made with plain JavaScript.
+This is a simple clone of the classic Connect Four game made with plain JavaScript.
 
 ## Getting Started
 
@@ -16,10 +16,10 @@ In your html file, create a new canvas and give it an id.
 Then in a script tag within your HTML or in an external javascript file, create a reference to your canvas element and pass that along to the TicTacToeGame constructor.
 
 ```html
-<script src='tic-tac-toe.js'></script>
+<script src='connect4.js'></script>
 <script>
   var canvas = document.getElementById('my-canvas');
-  var tictac = new TicTacToeGame(canvas, options)
+  var tictac = new Connect4Game(canvas, options)
 </script>
 ```
 

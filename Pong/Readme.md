@@ -1,5 +1,7 @@
 # Pong
-![Alt text](./img/pong.png)
+
+<img alt="Pong" src="./img/pong.png" width="250">
+
 This is a simple pong clone made with plain JavaScript.
 
 ## Getting Started

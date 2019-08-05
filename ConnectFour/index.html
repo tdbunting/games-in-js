@@ -20,10 +20,10 @@
     </p>
   </div >
   
-  <script src="pong.js"></script>
+  <script src="connect4.js"></script>
   <script>
     const canvas = document.getElementById('gameCanvas')
-    const pong = new PongGame(canvas, {aiIsOn: true, winCount: 5})
+    const pong = new Connect4Game(canvas, {aiIsOn: true, winCount: 5})
     
     const aiToggle = document.getElementById('ai')
     aiToggle.addEventListener('change', event => {
