@@ -1,5 +1,7 @@
 # Tic Tac Toe
 
+![Alt text](./img/tictac.png)
+
 This is a simple Tic-Tac-Toe game made with plain JavaScript.
 
 ## Getting Started
