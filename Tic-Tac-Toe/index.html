@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Tic-Tac-Toe Demo</title>
+</head>
+<body>
+  <div style="text-align: center;">
+    <canvas id="gameCanvas"
+            width="480"
+            height="480"
+            >
+    </canvas>
+    
+    <p class="center">
+      AI 
+      <input id="ai" on type="checkbox" checked>        
+    </p>
+
+    <form id="difficulty-switch" class="ai-difficulty center">
+      <input type="radio" id="difficulty1"
+            name="difficulty" value="1">
+      <label for="difficulty1">EASY</label>
+      <input type="radio" id="difficulty2"
+            name="difficulty" value="2">
+      <label for="difficulty2">NORMAL</label>
+      <input type="radio" id="difficulty3"
+            name="difficulty" value="3">
+      <label for="difficulty3">EXPERT</label>
+    </form>
+  </div >
+  
+  <script src="tic-tac-toe.js"></script>
+  <script>
+    const canvas = document.getElementById('gameCanvas')
+    const tictac = new TicTacToeGame(canvas, {aiIsOn: true, difficulty: 2})
+    
+    const aiToggle = document.getElementById('ai')
+    aiToggle.addEventListener('change', event => {
+      tictac.aiPlayer = event.target.checked
+    })
+
+    const aiDifficultySwitch = document.getElementById('difficulty-switch')
+
+    aiToggle.checked = tictac.aiPlayer
+    aiDifficultySwitch.value = tictac.difficulty
+    document.getElementById(`difficulty${tictac.difficulty}`).checked = tictac.aiPlayer
+    aiDifficultySwitch.hidden = !tictac.aiPlayer
+
+    
+    aiToggle.addEventListener('change', event => {
+      tictac.aiPlayer = event.target.checked
+      aiDifficultySwitch.hidden = !event.target.checked
+    })
+
+    aiDifficultySwitch.addEventListener('change', (e) => {
+      let data = new FormData(aiDifficultySwitch)
+      for(let entry of data){
+        tictac.difficulty = entry[1]
+      }
+    })
+  </script>
+</body>
+</html>
