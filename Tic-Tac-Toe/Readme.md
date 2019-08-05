@@ -19,11 +19,11 @@ Then in a script tag within your HTML or in an external javascript file, create 
 <script src='tic-tac-toe.js'></script>
 <script>
   var canvas = document.getElementById('my-canvas');
-  var tictac = new TicTacToeGame(canvas, options)
+  var tictac = new TicTacToeGame(canvas, settings)
 </script>
 ```
 
-### Options
+### Settings
 
 | Parameter  | Type    | Default |
 |------------|---------|---------|

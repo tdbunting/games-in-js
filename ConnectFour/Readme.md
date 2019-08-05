@@ -19,11 +19,11 @@ Then in a script tag within your HTML or in an external javascript file, create 
 <script src='connect4.js'></script>
 <script>
   var canvas = document.getElementById('my-canvas');
-  var connect4 = new Connect4Game(canvas, options)
+  var connect4 = new Connect4Game(canvas, settings)
 </script>
 ```
 
-### Options
+### Settings
 
 | Parameter  | Type    | Default |
 |------------|---------|---------|

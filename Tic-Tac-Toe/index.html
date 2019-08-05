@@ -39,26 +39,26 @@
     
     const aiToggle = document.getElementById('ai')
     aiToggle.addEventListener('change', event => {
-      tictac.aiPlayer = event.target.checked
+      tictac.settings = { aiIsOn: event.target.checked }
     })
 
     const aiDifficultySwitch = document.getElementById('difficulty-switch')
 
-    aiToggle.checked = tictac.aiPlayer
-    aiDifficultySwitch.value = tictac.difficulty
-    document.getElementById(`difficulty${tictac.difficulty}`).checked = tictac.aiPlayer
-    aiDifficultySwitch.hidden = !tictac.aiPlayer
+    aiToggle.checked = tictac.settings.aiIsOn
+    aiDifficultySwitch.value = tictac.settings.difficulty
+    document.getElementById(`difficulty${tictac.difficulty}`).checked = tictac.settings.aiIsOn
+    aiDifficultySwitch.hidden = !tictac.settings.aiIsOn
 
     
     aiToggle.addEventListener('change', event => {
-      tictac.aiPlayer = event.target.checked
+      tictac.settings = { aiIsOn: event.target.checked }
       aiDifficultySwitch.hidden = !event.target.checked
     })
 
     aiDifficultySwitch.addEventListener('change', (e) => {
       let data = new FormData(aiDifficultySwitch)
       for(let entry of data){
-        tictac.difficulty = entry[1]
+        tictac.settings = { difficulty: entry[1] }
       }
     })
   </script>

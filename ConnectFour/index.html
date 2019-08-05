@@ -23,11 +23,13 @@
   <script src="connect4.js"></script>
   <script>
     const canvas = document.getElementById('gameCanvas')
-    const pong = new Connect4Game(canvas, {aiIsOn: true, winCount: 5})
+    const connect4 = new Connect4Game(canvas, {aiIsOn: true, winCount: 5})
     
     const aiToggle = document.getElementById('ai')
     aiToggle.addEventListener('change', event => {
-      pong.aiPlayer = event.target.checked
+      connect4.settings = {
+        aiIsOn: event.target.checked
+      }
     })
   </script>
 </body>

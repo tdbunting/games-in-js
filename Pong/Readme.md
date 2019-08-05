@@ -19,11 +19,11 @@ Then in a script tag within your HTML or in an external javascript file, create 
 <script src='pong.js'></script>
 <script>
   var canvas = document.getElementById('my-canvas');
-  var pong = new PongGame(canvas, options)
+  var pong = new PongGame(canvas, settings)
 </script>
 ```
 
-### Options
+### Settings
 
 | Parameter | Type    | Default |
 |-----------|---------|---------|

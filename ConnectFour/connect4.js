@@ -142,7 +142,7 @@ class Board {
   }
 }
 
-export class Connect4Game {
+class Connect4Game {
   constructor(canvas, options={}){
     this._canvas = canvas
     this._canvasContext = canvas.getContext('2d')
@@ -280,10 +280,12 @@ export class Connect4Game {
       this._renderGameOverScreen()
     }
   }
+
   get settings(){
     return {
+      aiIsOn: this.aiPlayer,
       hasAi: false,
-      hasDifficulty: false,
+      hasDifficulty: false
     }
   }
 
