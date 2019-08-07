@@ -28,7 +28,6 @@ Then in a script tag within your HTML or in an external javascript file, create 
 | Parameter  | Type    | Default |
 |------------|---------|---------|
 | aiIsOn     | Boolean | true    |
-| difficulty | 1, 2, 3 | 2       |
 
 ## License
 

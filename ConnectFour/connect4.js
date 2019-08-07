@@ -112,7 +112,7 @@ class Board {
     return this.cells.every(cell => cell.owner)
   }
 
-  findEmptyPositions(){
+  findEmptyCells(){
     let arrOfCol = [], res = []
     for(let x = 0; x < this.cols; x++){
       arrOfCol.push(this.cells.filter(cell => cell.col === x + 1))
@@ -123,7 +123,10 @@ class Board {
       let done = false
       while(!done){
         const cell = col.pop()
-        if(!cell.owner || col.length === 0){
+        if(col.length === 0){
+          done=true
+        }
+        if(!cell.owner){
           res.push(cell)
           done = true
         }
@@ -133,12 +136,22 @@ class Board {
     return res
   }
 
+  _checkBoardFull() {
+    return this.cells.every(cell => cell.owner !== null)
+  }
+
   toMatrix(){
     let res = []
     for(let y = 0; y < this.rows; y++){
       res.push(this.cells.filter(cell => cell.row === y + 1))
     }
     return res
+  }
+
+  toSimpleMatrix(){
+    return this.toMatrix().map(row => {
+      return row.map(cell => cell.owner)
+    })
   }
 }
 
@@ -155,6 +168,9 @@ class Connect4Game {
     this.player = 'Y'
     this.winner = null
     
+    this.aiPlayer = true
+    this.aiTurn = false
+
     this.isActiveGame = false
 
     this.gameStartScreenActive = true
@@ -175,100 +191,8 @@ class Connect4Game {
 
   update(deltaTime){
     this.draw()
-  }
 
-  static findBestMove(board, difficulty, player){
-    return Connect4Game.minimax(board, difficulty, player)
-  }
-  static minimax(newBoard, depth, maximizingPlayer, lastMove){
-    const availableSpots = newboard.findEmptyPositions()
-    // /** position would give minimizing player a win */ 
-    // if(){
-    //   return { score : -10 }
-    // /** position would give maximizing player a win */ 
-    // }else if(){
-    //   return { score :  10 }
-    // /** position results in a tie or there are no more spots */
-    // }else if(this.checkWin(lastCell.row, lastCell.col) || availableSpots.length < 1){
-    //   return { score :  0 }
-    // }
-
-    let moves = []
-    for(let i=0; i < availableSpots.length; i++){
-      const cellIndex = availableSpots[i].id
-      var move = {}
-
-      move.index  = cellIndex
-      newBoard.cells[cellIndex].owner = maximizingPlayer
-
-      if(maximizingPlayer === 'Y'){
-        var result = Connect4Game.minimax(newBoard, depth - 1, 'R')
-        move.score = result.score
-      }else {
-        var result = Connect4Game.minimax(newBoard, depth - 1, 'Y')
-        move.score = result.score
-      }
-
-      newBoard.cells[cellIndex].owner = null
-      moves.push(move)
-    }
-
-    if(depth === 0){
-      return moves[0]
-    }else {
-      var bestMove;
-      if(maximizingPlayer === ''){
-        var bestScore = -10000
-        for(let i = 0; i < moves.length; i++){
-          if(moves[i].score > bestScore){
-            bestMove = i
-            bestScore = moves[i].score
-          }
-        }
-      }else {
-        var bestScore = 10000
-        for(let i = 0; i < moves.length; i++){
-          if(moves[i].score < bestScore){
-            bestScore = moves[i].score
-            bestMove = i
-          }
-        }
-      }
-      return moves[bestMove]
-    }
-  }
-
-
-  checkWin(row, col){
-    const res = {
-      horiz: [],
-      vert: [],
-      diagl: [],
-      diagr: [],
-    }
-    this.board.cells.forEach(cell => {
-      // Horizontal Check
-      if(cell.row === row){
-        res.horiz.push(cell)
-      }
-      // Vertical Check
-      if(cell.col === col){
-        res.vert.push(cell)
-      }
-      // Diagonal Left Check
-      if(cell.row - cell.col === row - col){
-        res.diagl.push(cell)
-      }
-      // Diagonal Right Check
-      if(cell.row + cell.col === row + col){
-        res.diagr.push(cell)
-      }
-    })
-
-    return this._match4(res.horiz) || 
-           this._match4(res.vert) ||
-           this._match4(res.diagl) ||
-           this._match4(res.diagr) 
+    this._aiMove(deltaTime)
   }
 
   draw(){
@@ -280,22 +204,6 @@ class Connect4Game {
       this._renderGameOverScreen()
     }
   }
-
-  get settings(){
-    return {
-      aiIsOn: this.aiPlayer,
-      hasAi: false,
-      hasDifficulty: false
-    }
-  }
-
-  // change difficulty, toggle ai
-  set settings(gameSettings){
-    if(gameSettings.aiIsOn !== undefined){
-      this.aiPlayer = gameSettings.aiIsOn
-    }
-  }
-
 
   _loop(){
     let lastTimeEntered;
@@ -318,6 +226,121 @@ class Connect4Game {
     this.isActiveGame = false
   }
 
+  _aiMove(){
+    if(!this.aiTurn){ 
+      return
+    }
+    // options
+    let moveOptions = {
+      win: [],
+      block: [],
+      nosig: [],
+      lose: [],
+    }
+
+    let availableCells = this.board.findEmptyCells();
+    availableCells.forEach(cell => {
+
+      // AI win = priority 1
+      cell.owner = 'R'
+      if(this.checkCellWin(cell.row, cell.col)){
+        moveOptions.win.push(cell.col)
+      }
+      else {
+        // AI Blocks = Priority 2
+        cell.owner = 'Y'
+        if(this.checkCellWin(cell.row, cell.col)){
+          moveOptions.block.push(cell.col)
+        }else {
+          cell.owner = 'R'
+
+          // check cell above?
+          if(cell.row - 2 > 0){
+            
+            // Ai Loses to player = priority 4
+            this.board.cells[cell.id - 2].owner = 'Y'
+            if(this.checkCellWin(cell.row-1, cell.col)){
+              moveOptions.lose.push(cell.col)
+            }
+            // no loss = priority 3
+            else {
+              moveOptions.nosig.push(cell.col)
+            }
+
+            // deselect cell
+            this.board.cells[cell.id - 2].owner = null
+          }
+          // no row above = third priority
+          else {
+            moveOptions.nosig.push(cell.col)
+          }
+        }
+      }
+      cell.owner = null
+    })
+    
+    this.board.cells.forEach(cell => cell.winner = false)
+
+    // Random selection in priority order
+    let col;
+    if(moveOptions.win.length > 0){
+      col = moveOptions.win[Math.floor(Math.random() * moveOptions.win.length)]
+    }else if(moveOptions.block.length > 0){
+      col = moveOptions.block[Math.floor(Math.random() * moveOptions.block.length)]
+    }else if(moveOptions.nosig.length > 0){
+      col = moveOptions.nosig[Math.floor(Math.random() * moveOptions.nosig.length)]
+    }else if(moveOptions.lose.length > 0){
+      col = moveOptions.lose[Math.floor(Math.random() * moveOptions.lose.length)]
+    }
+
+    let move = this.board.cells.filter(cell => cell.col === col && cell.owner === null).pop()
+
+    move.highlight = true
+
+    // Delay computer for more realistic timing
+    setTimeout(()=>{
+      this._makeMove(move)
+      this._aiMoving = false
+    }, 500)
+    
+    this.aiTurn = false
+   
+  }
+
+  _makeMove(cell){
+    cell.owner = this.player === 'Y' ? 'Y' : 'R'
+    cell.highlight = null
+    this.player = this.player === 'Y' ? 'R' : 'Y'  
+
+    let winner = this.checkCellWin(cell.row, cell.col)
+
+    if(winner){
+      this.winner = cell.owner
+      this.isActiveGame = false
+      this.gameOverScreenActive = true
+    }else if(!winner && this.board.isFull){
+      this.winner = 'T'
+      this.isActiveGame = false
+      this.gameOverScreenActive = true
+    }
+  }
+  // WIN LOGIC
+  // checks a given row and column for a win
+  checkCellWin(row, col){
+    const res = {
+      horiz: [...this.board.cells.filter(cell => cell.row === row)],
+      vert: [...this.board.cells.filter(cell => cell.col === col)],
+      diagl: [...this.board.cells.filter(cell => cell.row - cell.col === row - col)],
+      diagr: [...this.board.cells.filter(cell => cell.row + cell.col === row + col)],
+    }
+
+    return this._match4(res.horiz) || 
+           this._match4(res.vert) ||
+           this._match4(res.diagl) ||
+           this._match4(res.diagr) 
+  }
+
+  // checks that a given array has 4 cells in a row that match
   _match4(cells = []){
     let count = 0, lastOwner = null
     let winningCells = []
@@ -346,34 +369,30 @@ class Connect4Game {
         for(var c of winningCells){
           c.winner = true
         }
-        
+  
         return true
       }
     }
     return false
   }
 
-  _aiMove(){
-
-  }
-
-  _makeMove(cell){
-    cell.owner = this.player === 'Y' ? 'Y' : 'R'
-    cell.highlight = null
-    this.player = this.player === 'Y' ? 'R' : 'Y'  
-
-    let winner = this.checkWin(cell.row, cell.col)
-    if(winner){
-      this.winner = cell.owner
-      this.isActiveGame = false
-      this.gameOverScreenActive = true
-    }else if(!winner && this.board.isFull){
-      this.winner = 'T'
-      this.isActiveGame = false
-      this.gameOverScreenActive = true
+  //PUBLIC SETTINGS
+  get settings(){
+    return {
+      aiIsOn: this.aiPlayer,
+      hasAi: true,
+      hasDifficulty: false
     }
   }
 
+  // change difficulty, toggle ai
+  set settings(gameSettings){
+    if(gameSettings.aiIsOn !== undefined){
+      this.aiPlayer = gameSettings.aiIsOn
+    }
+  }
+
+  // RENDER FUNCTIONS
   _renderStartScreen(){
     // reset bg
     this._canvasContext.fillStyle = COLORS.black
@@ -420,7 +439,12 @@ class Connect4Game {
                                  txtVCenter + 30)
   }
   
+
+  // INPUT HANDLERS
   handleMouseMove(e){
+    if(this.aiTurn || this._aiMoving){
+      return
+    }
     const scalex = e.offsetX / e.target.getBoundingClientRect().width
     this.board.cells.forEach(cell => cell.highlight = null)
     const cellsToHighlight = this.board.cells.filter(cell => cell.inCol(e.layerX + scalex) && cell.owner === null)
@@ -430,6 +454,9 @@ class Connect4Game {
   }
 
   handleClick(e){
+    if(this.aiTurn || this._aiMoving){
+      return
+    }
     if(!this.isActiveGame){
       this.start()
 
@@ -438,6 +465,10 @@ class Connect4Game {
       const cellToDropOn = this.board.cells.filter(cell => cell.inCol(e.layerX + scalex) && cell.owner === null).pop()
       if(cellToDropOn){
         this._makeMove(cellToDropOn)
+        if(this.aiPlayer){
+          this.aiTurn = true
+          this._aiMoving = true
+        }
       }
     }
 }
