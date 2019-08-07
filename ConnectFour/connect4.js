@@ -1,10 +1,9 @@
-/* eslint-disable */
-
 const COLORS = {
   red: '#ff4c00',
   yellow: '#ffe200',
   blue: '#3b83ca',
   black: '#1f1f1f',
+  black50: 'rgba(0,0,0,0.5)',
   white: '#e6e6e6'
 }
 
@@ -25,6 +24,7 @@ class Cell {
     this.owner = null
     this.winner = false
   }
+
   contains(x, y){
     return x > this.left &&
            x < this.right &&
@@ -36,6 +36,7 @@ class Cell {
     return x > this.left &&
            x < this.right
   }
+
   draw(ctx){
     let color = this.owner === null ? COLORS.white : this.owner === 'Y' ? COLORS.yellow : COLORS.red
     ctx.fillStyle = color
@@ -47,6 +48,7 @@ class Cell {
       this.drawHighlighting(ctx)
     }
   }
+
   drawHighlighting(ctx){
     let color = this.winner ? COLORS.black : this.isHighlighted === 'Y' ? COLORS.yellow : COLORS.red
     ctx.lineWidth = this.radius / 4
@@ -90,7 +92,7 @@ class Board {
     this.cols = cols
     this.cells = this._createCells()
   }
-  
+
   draw(ctx){
     this.cells.forEach(cell => cell.draw(ctx))
   }
@@ -113,6 +115,10 @@ class Board {
 
   get isFull(){
     return this._checkBoardFull()
+  }
+
+  nextEmptyInCol(col){
+    return this.cells.filter(cell => cell.col === col && cell.owner === null).pop()
   }
 
   // generic filter function iterating over cells
@@ -148,6 +154,13 @@ class Board {
     return this.cells.every(cell => cell.owner !== null)
   }
 
+  reset(){
+    this.cells.map(cell => {
+      cell.owner = null
+      cell.winner = false
+    })
+  }
+
   toMatrix(){
     let res = []
     for(let y = 0; y < this.rows; y++){
@@ -174,9 +187,13 @@ class Connect4Game {
     this.cols = 7
 
     this.player = 'Y'
+
+    this.currentPlayer = 'Y'
+
     this.winner = null
     
-    this.aiPlayer = true
+    this.aiOn = true
+    this.aiPlayer = 'R'
     this.aiTurn = false
 
     this.isActiveGame = false
@@ -191,10 +208,25 @@ class Connect4Game {
   }
   
   start(){
+    // first reset
     this.reset()
-    this._loop()
+
+    // setup
+    this._setupPlayers()
     this.isActiveGame = true
+    
     this.gameStartScreenActive = false
+
+    // run Loop
+    this._loop()
+  }
+  _setupPlayers(){
+    // if ai player choose at random if it goes first 
+    if(this.aiOn){
+      this.aiTurn = Math.round(Math.random() * 1) ? true : false
+      this.player = this.aiTurn ? 'R' : 'Y'
+      this.aiPlayer = this.player === 'Y' ? 'R' : 'Y'
+    }
   }
 
   update(deltaTime){
@@ -229,12 +261,12 @@ class Connect4Game {
 
   reset(){
     this.winner = null
-    this.player = 'Y'
+    this.currentPlayer = 'Y'
     this.gameOverScreenActive = false
-    this.board = new Board(6, 7, this._canvas.width, this._canvas.height)
+    this.board.reset()
     this.isActiveGame = false
   }
-
+  
   _aiMove(){
     if(!this.aiTurn){ 
       return
@@ -247,28 +279,31 @@ class Connect4Game {
       lose: [],
     }
 
+    var minPlayer = this.player;
+    var maxPlayer = this.aiPlayer;
+
     let availableCells = this.board.findEmptyCells();
     availableCells.forEach(cell => {
 
       // AI win = priority 1
-      cell.owner = 'R'
-      if(this.checkCellWin(cell.row, cell.col)){
+      cell.owner = maxPlayer
+      if(this.checkWin(cell.row, cell.col)){
         moveOptions.win.push(cell.col)
       }
       else {
         // AI Blocks = Priority 2
-        cell.owner = 'Y'
-        if(this.checkCellWin(cell.row, cell.col)){
+        cell.owner = minPlayer
+        if(this.checkWin(cell.row, cell.col)){
           moveOptions.block.push(cell.col)
         }else {
-          cell.owner = 'R'
+          cell.owner = maxPlayer
 
           // check cell above?
           if(cell.row - 2 > 0){
             
             // Ai Loses to player = priority 4
-            this.board.cells[cell.id - 2].owner = 'Y'
-            if(this.checkCellWin(cell.row-1, cell.col)){
+            this.board.cells[cell.id - 2].owner = minPlayer
+            if(this.checkWin(cell.row-1, cell.col)){
               moveOptions.lose.push(cell.col)
             }
             // no loss = priority 3
@@ -290,21 +325,22 @@ class Connect4Game {
     
     this.board.cells.forEach(cell => cell.winner = false)
 
+    let randomOption = (options) => options[Math.floor(Math.random() * options.length)]
     // Random selection in priority order
     let col;
     if(moveOptions.win.length > 0){
-      col = moveOptions.win[Math.floor(Math.random() * moveOptions.win.length)]
+      col = randomOption(moveOptions.win)
     }else if(moveOptions.block.length > 0){
-      col = moveOptions.block[Math.floor(Math.random() * moveOptions.block.length)]
+      col = randomOption(moveOptions.block)
     }else if(moveOptions.nosig.length > 0){
-      col = moveOptions.nosig[Math.floor(Math.random() * moveOptions.nosig.length)]
+      col = randomOption(moveOptions.nosig)
     }else if(moveOptions.lose.length > 0){
-      col = moveOptions.lose[Math.floor(Math.random() * moveOptions.lose.length)]
+      col = randomOption(moveOptions.lose)
     }
 
-    let move = this.board.filter(cell => cell.col === col && cell.owner === null).pop()
+    let move = this.board.nextEmptyInCol(col)
 
-    move.highlight = true
+    move.highlight = this.currentPlayer
 
     // Delay computer for more realistic timing
     setTimeout(()=>{
@@ -316,12 +352,15 @@ class Connect4Game {
    
   }
 
-  _makeMove(cell){
-    cell.owner = this.player === 'Y' ? 'Y' : 'R'
-    cell.highlight = null
-    this.player = this.player === 'Y' ? 'R' : 'Y'  
+  switchCurrentPlayer(){
+    this.currentPlayer = this.currentPlayer === 'Y' ? 'R' : 'Y'  
+  }
 
-    let winner = this.checkCellWin(cell.row, cell.col)
+  _makeMove(cell){
+    cell.owner = this.currentPlayer
+    cell.highlight = null
+
+    let winner = this.checkWin(cell.row, cell.col)
 
     if(winner){
       this.winner = cell.owner
@@ -332,15 +371,17 @@ class Connect4Game {
       this.isActiveGame = false
       this.gameOverScreenActive = true
     }
+
+    this.switchCurrentPlayer()
   }
   // WIN LOGIC
   // checks a given row and column for a win
-  checkCellWin(row, col){
+  checkWin(row, col){
     const res = {
-      horiz: [...this.board.filter(cell => cell.row === row)],
-      vert: [...this.board.filter(cell => cell.col === col)],
-      diagl: [...this.board.filter(cell => cell.row - cell.col === row - col)],
-      diagr: [...this.board.filter(cell => cell.row + cell.col === row + col)],
+      horiz: this.board.filter(cell => cell.row === row),
+      vert:  this.board.filter(cell => cell.col === col),
+      diagl: this.board.filter(cell => cell.row - cell.col === row - col),
+      diagr: this.board.filter(cell => cell.row + cell.col === row + col),
     }
 
     return this._match4(res.horiz) || 
@@ -385,10 +426,10 @@ class Connect4Game {
     return false
   }
 
-  //PUBLIC SETTINGS
+  //PUBLIC SETTINGS - one place to change and set after creation
   get settings(){
     return {
-      aiIsOn: this.aiPlayer,
+      aiIsOn: this.aiOn,
       hasAi: true,
       hasDifficulty: false
     }
@@ -397,7 +438,7 @@ class Connect4Game {
   // change difficulty, toggle ai
   set settings(gameSettings){
     if(gameSettings.aiIsOn !== undefined){
-      this.aiPlayer = gameSettings.aiIsOn
+      this.aiOn = gameSettings.aiIsOn
     }
   }
 
@@ -427,7 +468,7 @@ class Connect4Game {
 
   _renderGameOverScreen(){
     // reset bg
-    this._canvasContext.fillStyle = COLORS.black
+    this._canvasContext.fillStyle = COLORS.black50
     this._canvasContext.fillRect(0, 0, this._canvas.width, this._canvas.height)
 
     // text
@@ -451,14 +492,14 @@ class Connect4Game {
 
   // INPUT HANDLERS
   handleMouseMove(e){
-    if(this.aiTurn || this._aiMoving){
+    if(this.aiTurn || this._aiMoving || !this.isActiveGame){
       return
     }
     const scalex = e.offsetX / e.target.getBoundingClientRect().width
     this.board.cells.forEach(cell => cell.highlight = null)
     const cellsToHighlight = this.board.filter(cell => cell.inCol(e.layerX + scalex) && cell.owner === null)
     if(cellsToHighlight.length > 0){
-      cellsToHighlight[cellsToHighlight.length - 1].highlight = this.player
+      cellsToHighlight[cellsToHighlight.length - 1].highlight = this.currentPlayer
     }  
   }
 
@@ -473,11 +514,11 @@ class Connect4Game {
       const cellToDropOn = this.board.filter(cell => cell.inCol(e.layerX + scalex) && cell.owner === null).pop()
       if(cellToDropOn){
         this._makeMove(cellToDropOn)
-        if(this.aiPlayer && this.isActiveGame){
+        if(this.aiOn && this.isActiveGame){
           this.aiTurn = true
           this._aiMoving = true
         }
       }
     }
-}
+  }
 }
